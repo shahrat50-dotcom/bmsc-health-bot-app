@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { Heart, Droplets, Thermometer, Sparkles, PhoneCall } from 'lucide-react'
-import { Area, AreaChart, ResponsiveContainer, XAxis, Tooltip } from 'recharts'
+import { Heart, Droplets, Thermometer, Sparkles, PhoneCall, LogOut } from 'lucide-react'
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card } from '@/src/components/ui/Card'
 import { getGemini } from '@/src/lib/gemini'
+import { supabase } from '@/src/lib/supabase'
 
-// Mock data generator for the chart
 const generateInitialChartData = () => {
   return Array.from({ length: 12 }).map((_, i) => ({
     time: `${i * 2}:00`,
@@ -17,6 +17,7 @@ const generateInitialChartData = () => {
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const [user, setUser] = useState<any>(null)
   const [healthData, setHealthData] = useState({
     heartRate: 72,
     spo2: 98,
@@ -25,36 +26,74 @@ export function Dashboard() {
   const [chartData, setChartData] = useState(generateInitialChartData())
   const [aiInsight, setAiInsight] = useState("Analyzing your vitals...")
 
-  // We assume user 1 is "Alex"
   useEffect(() => {
-    const loadVitals = () => {
-      const stored = localStorage.getItem('health_vitals_1')
-      if (stored) {
-        setHealthData(JSON.parse(stored))
+    const checkUser = async () => {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser(user)
+        fetchProfile(user.id)
+      } else {
+        navigate('/')
       }
     }
     
-    loadVitals() // Initial load
-    
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'health_vitals_1') {
-        loadVitals()
+    const fetchProfile = async (userId: string) => {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+        
+      if (data) {
+        setHealthData({
+          heartRate: data.heart_rate || 72,
+          spo2: data.spo2 || 98,
+          temp: data.temp || 36.6
+        })
       }
     }
 
-    const handleCustomEvent = () => loadVitals()
-
-    window.addEventListener('storage', handleStorage)
-    window.addEventListener('vitals_updated', handleCustomEvent)
+    checkUser()
     
-    return () => {
-      window.removeEventListener('storage', handleStorage)
-      window.removeEventListener('vitals_updated', handleCustomEvent)
+    if (supabase) {
+      const authListener = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+          navigate('/')
+        } else if (session?.user) {
+          setUser(session.user)
+          fetchProfile(session.user.id)
+        }
+      })
+      
+      const channel = supabase
+        .channel('public:profiles')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles' 
+          }, 
+          (payload) => {
+            if (user && payload.new.id === user.id) {
+              setHealthData({
+                heartRate: payload.new.heart_rate,
+                spo2: payload.new.spo2,
+                temp: payload.new.temp
+              })
+            }
+          }
+        )
+        .subscribe()
+
+      return () => {
+        authListener.data.subscription.unsubscribe()
+        supabase.removeChannel(channel)
+      }
     }
-  }, [])
+  }, [navigate, user?.id])
 
   useEffect(() => {
-    // Add point to chart over time based on current HR
     const interval = setInterval(() => {
       setChartData(prev => {
         const d = new Date()
@@ -66,7 +105,6 @@ export function Dashboard() {
   }, [healthData.heartRate, healthData.spo2])
 
   useEffect(() => {
-    // Fetch AI insight
     const fetchInsight = async () => {
       try {
         const ai = getGemini()
@@ -82,16 +120,28 @@ export function Dashboard() {
     }
     fetchInsight()
   }, [])
+  
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
+    navigate('/')
+  }
 
   return (
     <div className="flex flex-col p-6 space-y-6">
       <header className="flex items-center justify-between pt-4">
         <div>
           <h1 className="text-2xl font-bold text-[#0369A1]">HealthSync <span className="font-light text-[#38BDF8]">Smart</span></h1>
-          <p className="text-slate-500 text-sm font-medium">Welcome back, Alex</p>
+          <p className="text-slate-500 text-sm font-medium">Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 border-4 border-white shadow-md"></div>
+          <button onClick={handleLogout} className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-700">
+            <LogOut className="w-5 h-5"/>
+          </button>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 border-2 border-white shadow-md flex items-center justify-center text-white font-bold">
+            {user?.user_metadata?.full_name?.[0]?.toUpperCase() || 'U'}
+          </div>
         </div>
       </header>
 
@@ -194,7 +244,6 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Spacer for bottom nav */}
       <div className="h-6"></div>
     </div>
   )
@@ -202,7 +251,6 @@ export function Dashboard() {
 
 function CircularProgress({ value, label, unit, color, max, status, statusColor }: any) {
   const percentage = Math.min(100, Math.max(0, (Number(value) / max) * 100))
-  // circum is ~ 251 for r=40
   const offset = 251 - (251 * percentage) / 100
 
   return (
@@ -222,3 +270,4 @@ function CircularProgress({ value, label, unit, color, max, status, statusColor 
     </div>
   )
 }
+

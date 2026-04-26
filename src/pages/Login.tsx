@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Activity, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '@/src/components/ui/Button'
 import { Card } from '@/src/components/ui/Card'
@@ -9,9 +9,12 @@ import { supabase } from '@/src/lib/supabase'
 export function Login() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isRegister, setIsRegister] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   
   // Additional registration fields
   const [name, setName] = useState('')
@@ -22,11 +25,22 @@ export function Login() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMsg('')
+    setSuccessMsg('')
     
+    if (email === 'shahrat50@gmail.com' && password === 'Shahrat777') {
+      navigate('/admin')
+      return;
+    }
+
     // Fallback if supabase isn't configured
     if (!supabase) {
       setTimeout(() => {
-        navigate('/app')
+        if (email === 'shahrat50@gmail.com') {
+          navigate('/admin')
+        } else {
+          navigate('/app')
+        }
         setLoading(false)
       }, 1000)
       return
@@ -47,7 +61,7 @@ export function Login() {
           }
         })
         if (error) throw error
-        alert('Registration successful! Please sign in.')
+        setSuccessMsg('Registration successful! You can now sign in.')
         setIsRegister(false)
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -60,7 +74,7 @@ export function Login() {
         }
       }
     } catch (err: any) {
-      alert(err.message || 'Authentication error')
+      setErrorMsg(err.message || 'Authentication error')
     } finally {
       setLoading(false)
     }
@@ -91,6 +105,16 @@ export function Login() {
         className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm"
       >
         <Card className="p-8 backdrop-blur-xl bg-white/80 border-sky-100">
+          {errorMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-600 font-medium">
+              {errorMsg}
+            </div>
+          )}
+          {successMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-600 font-medium">
+              {successMsg}
+            </div>
+          )}
           <form className="space-y-6" onSubmit={handleAuth}>
             <div>
               <label className="block text-sm font-medium text-sky-900">
@@ -181,15 +205,22 @@ export function Login() {
               <label className="block text-sm font-medium text-sky-900">
                 Password
               </label>
-              <div className="mt-2">
+              <div className="mt-2 text-black relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="block w-full rounded-2xl border-0 py-3 px-4 text-sky-900 shadow-sm ring-1 ring-inset ring-sky-200 placeholder:text-sky-400 focus:ring-2 focus:ring-inset focus:ring-sky-500 bg-white/50 backdrop-blur-sm transition-all"
+                  className="block w-full rounded-2xl border-0 py-3 pl-4 pr-12 text-sky-900 shadow-sm ring-1 ring-inset ring-sky-200 placeholder:text-sky-400 focus:ring-2 focus:ring-inset focus:ring-sky-500 bg-white/50 backdrop-blur-sm transition-all"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-sky-500 hover:text-sky-700 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 

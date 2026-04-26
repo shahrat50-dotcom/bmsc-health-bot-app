@@ -55,7 +55,7 @@ export function Scan() {
               <div className="bg-white rounded-[2rem] p-6 flex flex-col items-center justify-center border border-white shadow-xl shadow-sky-900/5 group h-[300px] w-[300px] relative overflow-hidden">
                 <Scanner 
                   onScan={(result) => handleScan(result[0].rawValue)}
-                  components={{ audio: false, finder: false }}
+                  components={{ finder: false }}
                 />
                 
                 {/* Scanner Overlay UI */}
@@ -97,7 +97,7 @@ export function Scan() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-sky-950">{item.name}</h4>
-                        <p className="text-sm text-sky-500 font-medium">${item.price.toFixed(2)}</p>
+                        <p className="text-sm text-sky-500 font-medium">৳{item.price.toFixed(2)}</p>
                       </div>
                     </div>
                   </Card>

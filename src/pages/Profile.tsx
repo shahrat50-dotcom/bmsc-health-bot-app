@@ -5,9 +5,33 @@ import { Card } from '@/src/components/ui/Card'
 import { Button } from '@/src/components/ui/Button'
 import { supabase } from '@/src/lib/supabase'
 
+// Update balance from Supabase
 export function Profile() {
   const navigate = useNavigate()
-  const [balance] = useState(42.50)
+  const [balance, setBalance] = useState(0)
+  const [userFullName, setUserFullName] = useState('Anonymous')
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('balance, full_name')
+          .eq('id', user.id)
+          .single()
+        
+        if (data) {
+          setBalance(data.balance || 0)
+          if (data.full_name) {
+            setUserFullName(data.full_name)
+          }
+        }
+      }
+    }
+    fetchProfile()
+  }, [])
 
   const handleLogout = async () => {
     if (supabase) {
@@ -32,11 +56,11 @@ export function Profile() {
       <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-[2rem] p-6 text-white shadow-lg relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">NFC Health Card</p>
-        <p className="text-3xl font-bold mb-6">${balance.toFixed(2)}</p>
+        <p className="text-3xl font-bold mb-6">৳{balance.toFixed(2)}</p>
         <div className="flex justify-between items-end relative z-10">
           <div>
             <p className="text-[10px] opacity-70">CARD HOLDER</p>
-            <p className="text-sm font-medium uppercase">Alex Marshall</p>
+            <p className="text-sm font-medium uppercase">{userFullName}</p>
             <p className="text-xs text-white/60 mt-1">•••• 4021</p>
           </div>
           <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">

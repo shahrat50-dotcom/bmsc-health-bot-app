@@ -59,7 +59,7 @@ export function History() {
                 <p className="text-[10px] text-slate-400 mt-0.5">{item.desc} • {format(item.date, 'MMM d, h:mm a')}</p>
                 {item.amount ? (
                   <p className={`text-[10px] font-bold mt-1 ${item.amount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {item.amount > 0 ? '+' : '-'} ${Math.abs(item.amount).toFixed(2)}
+                    {item.amount > 0 ? '+' : '-'} ৳{Math.abs(item.amount).toFixed(2)}
                   </p>
                 ) : (
                   <p className="text-[10px] font-bold text-emerald-500 mt-1">STABLE</p>
