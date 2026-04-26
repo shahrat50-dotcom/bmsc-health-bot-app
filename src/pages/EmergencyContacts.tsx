@@ -6,14 +6,23 @@ import { Card } from '@/src/components/ui/Card'
 import { Button } from '@/src/components/ui/Button'
 
 const HOSPITALS = [
-  { id: 1, name: 'City Central Hospital', distance: '1.2 km', phone: '+1234567890', status: 'Open 24/7' },
-  { id: 2, name: 'Metro Healthcare', distance: '2.5 km', phone: '+1987654321', status: 'Open 24/7' },
-  { id: 3, name: 'Green Valley Clinic', distance: '3.8 km', phone: '+1555123456', status: 'Closes 10 PM' },
+  { id: 1, name: 'Shaheed Ziaur Rahman Medical College (SZMC)', distance: '4.5 - 5 km', phone: '02589-904151', status: 'Chilimpur' },
+  { id: 2, name: '250 Bed Mohammad Ali Hospital', distance: '1.5 - 2 km', phone: '02589-910550', status: 'Station Road' },
+  { id: 3, name: 'Ibn Sina Diagnostic & Consultation Center', distance: '1.5 km', phone: '01701-560001', status: 'Sherpur Road' },
+  { id: 4, name: 'Popular Diagnostic Centre', distance: '1 km', phone: '09613787812', status: 'Thanthania' },
+  { id: 5, name: 'Islami Bank Hospital', distance: '1.5 km', phone: '01724-440400', status: 'Thanthania' },
+  { id: 6, name: 'Health City Specialized Hospital', distance: '2 km', phone: '01790-181818', status: 'Sherpur Road' },
+  { id: 7, name: 'TMSS Medical College & Hospital', distance: '8 - 9 km', phone: '01731-057432', status: 'Thengamara' },
+  { id: 8, name: 'Bogura Diabetic Hospital', distance: '3 km', phone: '051-65024', status: 'Jahurul Nagar' },
 ]
 
 const AMBULANCES = [
-  { id: 1, name: 'Fast Response Medic', distance: '0.8 km', phone: '+1112223333', time: 'est. 5 mins' },
-  { id: 2, name: 'LifeLine Transport', distance: '2.1 km', phone: '+14445556666', time: 'est. 12 mins' },
+  { id: 1, name: 'Riad Ambulance Service (Local)', distance: 'Available', phone: '01953-921890', time: 'Local' },
+  { id: 2, name: 'Bogura to Dhaka Ambulance Service', distance: 'Inter-City', phone: '01911-125156', time: 'Long Distance' },
+  { id: 3, name: 'SZMC Hospital Ambulance', distance: 'At Hospital', phone: '01769-104089', time: 'Medical College' },
+  { id: 4, name: 'Red Crescent Ambulance (Bogura)', distance: 'Various', phone: '051-66203', time: 'Emergency' },
+  { id: 5, name: 'Mohammad Ali Hospital Ambulance', distance: 'At Hospital', phone: '051-66107', time: 'General Hospital' },
+  { id: 6, name: 'Popular Ambulance Helpline', distance: 'Private', phone: '01953-921890', time: '24/7' },
 ]
 
 export function EmergencyContacts() {

@@ -10,6 +10,7 @@ import { Scan } from './pages/Scan'
 import { History } from './pages/History'
 import { Profile } from './pages/Profile'
 import { Admin } from './pages/Admin'
+import { Reminders } from './pages/Reminders'
 import { EmergencyContacts } from './pages/EmergencyContacts'
 import { Chat } from './pages/Chat'
 import { MobileLayout } from './components/Layout/MobileLayout'
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="history" element={<History />} />
           <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="reminders" element={<Reminders />} />
           <Route path="emergency" element={<EmergencyContacts />} />
         </Route>
 

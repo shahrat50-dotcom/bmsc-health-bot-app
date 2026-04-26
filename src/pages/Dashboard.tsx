@@ -22,6 +22,7 @@ export function Dashboard() {
     heartRate: 72,
     spo2: 98,
     temp: 98.6,
+    balance: 0,
   })
   const [chartData, setChartData] = useState(generateInitialChartData())
   const [aiInsight, setAiInsight] = useState("Analyzing your vitals...")
@@ -50,53 +51,64 @@ export function Dashboard() {
         setHealthData({
           heartRate: data.heart_rate || 72,
           spo2: data.spo2 || 98,
-          temp: data.temp || 98.6
+          temp: data.temp || 98.6,
+          balance: data.balance || 0
         })
       }
     }
 
     checkUser()
     
-    if (supabase) {
-      const authListener = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
-          navigate('/')
-        } else if (session?.user) {
-          setUser(session.user)
-          fetchProfile(session.user.id)
-        }
-      })
+    const { data: authListener } = supabase?.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/')
+      } else if (session?.user) {
+        setUser(session.user)
+        fetchProfile(session.user.id)
+      }
+    }) || { data: { subscription: null } };
       
-      const channel = supabase
-        .channel(`public:profiles:${user?.id || 'guest'}`)
+    // Realtime subscription
+    let channel: any = null;
+    if (supabase && user?.id) {
+      const channelName = `realtime:public:profiles:${user.id}`;
+      
+      // Setup the channel
+      channel = supabase
+        .channel(channelName)
         .on('broadcast', { event: 'vitals_update' }, (payload) => {
-          setHealthData({
+          setHealthData(prev => ({
+            ...prev,
             heartRate: payload.payload.heartRate,
             spo2: payload.payload.spo2,
-            temp: payload.payload.temp
-          })
+            temp: payload.payload.temp,
+            balance: payload.payload.balance
+          }))
         })
         .on('postgres_changes', { 
             event: 'UPDATE', 
             schema: 'public', 
             table: 'profiles',
-            filter: user ? `id=eq.${user.id}` : undefined
+            filter: `id=eq.${user.id}`
           }, 
           (payload) => {
             if (payload.new) {
               setHealthData({
                 heartRate: payload.new.heart_rate,
                 spo2: payload.new.spo2,
-                temp: payload.new.temp
+                temp: payload.new.temp,
+                balance: payload.new.balance
               })
             }
           }
         )
-        .subscribe()
+        .subscribe();
+    }
 
-      return () => {
-        authListener.data.subscription.unsubscribe()
-        supabase.removeChannel(channel)
+    return () => {
+      authListener?.subscription?.unsubscribe();
+      if (channel) {
+        supabase.removeChannel(channel);
       }
     }
   }, [navigate, user?.id])
@@ -182,7 +194,10 @@ export function Dashboard() {
       <Card className="p-6 relative overflow-hidden">
         <div className="flex justify-between items-start mb-6">
           <h2 className="text-lg font-bold text-slate-800">Real-time Vitals</h2>
-          <span className="text-[10px] font-bold text-sky-500 bg-sky-50 px-3 py-1 rounded-full uppercase tracking-wider">Live Data</span>
+          <div className="flex flex-col items-end gap-1">
+             <span className="text-[10px] font-bold text-sky-500 bg-sky-50 px-3 py-1 rounded-full uppercase tracking-wider">Live Data</span>
+             <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">৳{healthData.balance.toFixed(2)}</span>
+          </div>
         </div>
         
         <div className="flex justify-around items-center">

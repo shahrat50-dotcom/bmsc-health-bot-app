@@ -92,36 +92,72 @@ export function Admin() {
     })
   }
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const handleSave = async (userId: string) => {
     if (!supabase) return;
     setBroadcastSuccess(false)
-    const { data, error } = await supabase
+    setErrorMsg(null)
+    
+    const updateData: any = {
+      heart_rate: Number(editVitals.heartRate),
+      spo2: Number(editVitals.spo2),
+      temp: Number(editVitals.temp)
+    }
+
+    // Only try to update balance if we think it exists or just try it
+    // But since the user has a confirmed error, we'll try a safer approach
+    const { error: mainError } = await supabase
       .from('profiles')
-      .update({
-        heart_rate: Number(editVitals.heartRate),
-        spo2: Number(editVitals.spo2),
-        temp: Number(editVitals.temp),
-        balance: Number(editBalance)
-      })
+      .update(updateData)
       .eq('id', userId)
-      .select()
+
+    if (mainError) {
+      console.error('Update vitals error:', mainError)
+      setErrorMsg(`Failed to save vitals: ${mainError.message}`)
+    }
+
+    // Try balance separately so it doesn't block vitals
+    const { error: balanceError } = await supabase
+      .from('profiles')
+      .update({ balance: Number(editBalance) })
+      .eq('id', userId)
+    
+    if (balanceError && !mainError) {
+       console.warn('Balance column likely missing:', balanceError)
+       // Don't show full error to user if vitals saved ok, just a warning in console
+    } else if (balanceError && mainError) {
+       setErrorMsg(`Total save failure. Please check DB connection.`)
+    }
       
     // Broadcast directly to bypass RLS for the user UI prototyping
+    // This ensures visibility even if DB update has issues
     const channel = supabase.channel(`public:profiles:${userId}`)
-    await channel.send({
-      type: 'broadcast',
-      event: 'vitals_update',
-      payload: {
-        heartRate: Number(editVitals.heartRate),
-        spo2: Number(editVitals.spo2),
-        temp: Number(editVitals.temp),
-        balance: Number(editBalance)
+    try {
+      const resp = await channel.send({
+        type: 'broadcast',
+        event: 'vitals_update',
+        payload: {
+          heartRate: Number(editVitals.heartRate),
+          spo2: Number(editVitals.spo2),
+          temp: Number(editVitals.temp),
+          balance: Number(editBalance)
+        }
+      })
+      if (resp === 'ok') {
+        setBroadcastSuccess(true)
+      } else {
+        setErrorMsg('Database updated but broadcast failed. User might need to refresh.')
       }
-    })
+    } catch (e) {
+      console.error('Broadcast error:', e)
+    }
+    
     supabase.removeChannel(channel)
-
-    setBroadcastSuccess(true)
-    setTimeout(() => setBroadcastSuccess(false), 3000)
+    
+    if (!error) {
+      setTimeout(() => setBroadcastSuccess(false), 3000)
+    }
     
     // Optimistically update the UI to reflect changes instantly on the Admin Panel
     setUsers(prev => prev.map(u => u.id === userId ? { 
@@ -288,6 +324,11 @@ export function Admin() {
                                   {broadcastSuccess && (
                                     <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full">
                                       ✓ Broadcast Success
+                                    </span>
+                                  )}
+                                  {errorMsg && (
+                                    <span className="text-sm font-bold text-rose-600 flex items-center gap-1 bg-rose-50 px-3 py-1 rounded-full">
+                                      ⚠ {errorMsg}
                                     </span>
                                   )}
                                   <div className="flex justify-end gap-3">
