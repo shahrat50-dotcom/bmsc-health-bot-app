@@ -1,0 +1,59 @@
+import React from 'react'
+import { Outlet, NavLink } from 'react-router-dom'
+import { Home, ScanLine, History, User } from 'lucide-react'
+import { motion } from 'motion/react'
+
+export function MobileLayout() {
+  return (
+    <div className="flex h-screen w-full justify-center bg-[#F0F9FF] text-slate-900 font-sans">
+      <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden sm:border-x sm:border-sky-100 sm:shadow-2xl">
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto pb-28 relative hide-scrollbar">
+          <Outlet />
+        </main>
+
+        {/* Bottom Navigation */}
+        <div className="absolute bottom-6 left-6 right-6">
+          <nav className="bg-white rounded-[2.5rem] p-3 flex justify-between items-center shadow-2xl shadow-sky-900/20 border border-white">
+            <NavItem to="/app" icon={(<svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>)} label="Home" />
+            <NavItem to="/app/scan" icon={(<svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01" /></svg>)} label="Scan" isCenter />
+            <NavItem to="/app/history" icon={(<svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>)} label="History" />
+            <NavItem to="/app/profile" icon={(<svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>)} label="Profile" />
+          </nav>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NavItem({ to, icon, label, isCenter }: { to: string; icon: React.ReactNode; label: string; isCenter?: boolean }) {
+  return (
+    <NavLink
+      to={to}
+      end={to === '/app'}
+      className={({ isActive }) =>
+        `flex-1 flex justify-center text-slate-400 hover:text-sky-500 cursor-pointer transition-colors outline-none decoration-transparent
+        `
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isCenter ? (
+            <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center text-white shadow-lg -translate-y-2 border-4 border-[#F0F9FF]">
+              {icon}
+            </div>
+          ) : isActive ? (
+            <div className="bg-sky-500 text-white px-6 py-2 rounded-full flex items-center gap-2">
+              {icon}
+              <span className="text-xs font-bold">{label}</span>
+            </div>
+          ) : (
+            <div className="py-2">
+              {icon}
+            </div>
+          )}
+        </>
+      )}
+    </NavLink>
+  )
+}
