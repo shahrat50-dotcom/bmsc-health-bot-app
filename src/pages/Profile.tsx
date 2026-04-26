@@ -12,6 +12,8 @@ export function Profile() {
   const [userFullName, setUserFullName] = useState('Anonymous')
 
   React.useEffect(() => {
+    let channel: any;
+
     const fetchProfile = async () => {
       if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser()
@@ -28,9 +30,35 @@ export function Profile() {
             setUserFullName(data.full_name)
           }
         }
+
+        channel = supabase
+          .channel(`public:profiles:${user.id}`)
+          .on('broadcast', { event: 'vitals_update' }, (payload) => {
+            if (payload.payload.balance !== undefined) setBalance(payload.payload.balance)
+          })
+          .on('postgres_changes', { 
+              event: 'UPDATE', 
+              schema: 'public', 
+              table: 'profiles',
+              filter: `id=eq.${user.id}`
+            }, 
+            (payload) => {
+              if (payload.new) {
+                if (payload.new.balance !== undefined) setBalance(payload.new.balance)
+                if (payload.new.full_name !== undefined) setUserFullName(payload.new.full_name)
+              }
+            }
+          )
+          .subscribe()
       }
     }
     fetchProfile()
+
+    return () => {
+      if (channel && supabase) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
 
   const handleLogout = async () => {

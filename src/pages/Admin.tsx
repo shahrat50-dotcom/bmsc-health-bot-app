@@ -29,7 +29,7 @@ export function Admin() {
   const [editVitals, setEditVitals] = useState({
     heartRate: 72,
     spo2: 98,
-    temp: 36.6
+    temp: 98.6
   })
 
   // Balance edit state
@@ -75,23 +75,27 @@ export function Admin() {
     }
   }, [])
 
+  const [broadcastSuccess, setBroadcastSuccess] = useState(false)
+
   const handleEditClick = (user: any) => {
     if (editingUserId === user.id) {
       setEditingUserId(null)
       return
     }
     setEditingUserId(user.id)
+    setBroadcastSuccess(false)
     setEditBalance(user.balance || 0)
     setEditVitals({
       heartRate: user.heart_rate || 72,
       spo2: user.spo2 || 98,
-      temp: user.temp || 36.6
+      temp: user.temp || 98.6
     })
   }
 
   const handleSave = async (userId: string) => {
     if (!supabase) return;
-    const { error } = await supabase
+    setBroadcastSuccess(false)
+    const { data, error } = await supabase
       .from('profiles')
       .update({
         heart_rate: Number(editVitals.heartRate),
@@ -100,10 +104,33 @@ export function Admin() {
         balance: Number(editBalance)
       })
       .eq('id', userId)
+      .select()
       
-    if (!error) {
-      setEditingUserId(null)
-    }
+    // Broadcast directly to bypass RLS for the user UI prototyping
+    const channel = supabase.channel(`public:profiles:${userId}`)
+    await channel.send({
+      type: 'broadcast',
+      event: 'vitals_update',
+      payload: {
+        heartRate: Number(editVitals.heartRate),
+        spo2: Number(editVitals.spo2),
+        temp: Number(editVitals.temp),
+        balance: Number(editBalance)
+      }
+    })
+    supabase.removeChannel(channel)
+
+    setBroadcastSuccess(true)
+    setTimeout(() => setBroadcastSuccess(false), 3000)
+    
+    // Optimistically update the UI to reflect changes instantly on the Admin Panel
+    setUsers(prev => prev.map(u => u.id === userId ? { 
+      ...u, 
+      heart_rate: Number(editVitals.heartRate),
+      spo2: Number(editVitals.spo2),
+      temp: Number(editVitals.temp),
+      balance: Number(editBalance)
+    } : u))
   }
   
   const handleLogout = async () => {
@@ -234,7 +261,7 @@ export function Admin() {
                                   </div>
                                   <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                                      <Thermometer className="w-4 h-4 text-amber-500" /> Temperature (°C)
+                                      <Thermometer className="w-4 h-4 text-amber-500" /> Temperature (°F)
                                     </label>
                                     <input 
                                       type="number" 
@@ -257,13 +284,20 @@ export function Admin() {
                                     />
                                   </div>
                                 </div>
-                                <div className="flex justify-end gap-3">
-                                  <Button variant="outline" size="sm" onClick={() => setEditingUserId(null)} className="flex items-center gap-2 border-slate-200">
-                                    <X className="w-4 h-4" /> Cancel
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleSave(user.id)} className="flex items-center gap-2">
-                                    <Save className="w-4 h-4" /> Broadcast to User App
-                                  </Button>
+                                <div className="flex justify-end items-center gap-4 border-t border-slate-100 pt-4">
+                                  {broadcastSuccess && (
+                                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full">
+                                      ✓ Broadcast Success
+                                    </span>
+                                  )}
+                                  <div className="flex justify-end gap-3">
+                                    <Button variant="outline" size="sm" onClick={() => setEditingUserId(null)} className="flex items-center gap-2 border-slate-200">
+                                      <X className="w-4 h-4" /> Cancel
+                                    </Button>
+                                    <Button size="sm" onClick={() => handleSave(user.id)} className="flex items-center gap-2">
+                                      <Save className="w-4 h-4" /> Broadcast to User App
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </td>

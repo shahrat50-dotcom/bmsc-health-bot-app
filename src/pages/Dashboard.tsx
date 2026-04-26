@@ -21,7 +21,7 @@ export function Dashboard() {
   const [healthData, setHealthData] = useState({
     heartRate: 72,
     spo2: 98,
-    temp: 36.6,
+    temp: 98.6,
   })
   const [chartData, setChartData] = useState(generateInitialChartData())
   const [aiInsight, setAiInsight] = useState("Analyzing your vitals...")
@@ -50,7 +50,7 @@ export function Dashboard() {
         setHealthData({
           heartRate: data.heart_rate || 72,
           spo2: data.spo2 || 98,
-          temp: data.temp || 36.6
+          temp: data.temp || 98.6
         })
       }
     }
@@ -68,14 +68,22 @@ export function Dashboard() {
       })
       
       const channel = supabase
-        .channel('public:profiles')
+        .channel(`public:profiles:${user?.id || 'guest'}`)
+        .on('broadcast', { event: 'vitals_update' }, (payload) => {
+          setHealthData({
+            heartRate: payload.payload.heartRate,
+            spo2: payload.payload.spo2,
+            temp: payload.payload.temp
+          })
+        })
         .on('postgres_changes', { 
             event: 'UPDATE', 
             schema: 'public', 
-            table: 'profiles' 
+            table: 'profiles',
+            filter: user ? `id=eq.${user.id}` : undefined
           }, 
           (payload) => {
-            if (user && payload.new.id === user.id) {
+            if (payload.new) {
               setHealthData({
                 heartRate: payload.new.heart_rate,
                 spo2: payload.new.spo2,
@@ -107,19 +115,45 @@ export function Dashboard() {
   useEffect(() => {
     const fetchInsight = async () => {
       try {
+        setAiInsight("Analyzing your vitals...")
         const ai = getGemini()
-        const prompt = `Given these vitals: Heart Rate ${Math.round(healthData.heartRate)} bpm, SpO2 ${Math.round(healthData.spo2)}%, Temp ${healthData.temp.toFixed(1)}°C. Provide a single, short, encouraging 1-sentence daily health advice. No robotic tone.`
+        const prompt = `Given these vitals: Heart Rate ${Math.round(healthData.heartRate)} bpm, SpO2 ${Math.round(healthData.spo2)}%, Temp ${healthData.temp.toFixed(1)}°F. Provide a single, short, encouraging 1-sentence daily health advice. No robotic tone.`
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-2.5-flash',
           contents: prompt
         })
         setAiInsight(response.text || "Your vitals look stable. Keep staying hydrated!")
-      } catch (e) {
+      } catch (e: any) {
+        if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
+          setAiInsight("Please try again after 15 minutes.")
+        } else {
+          setAiInsight("Your vitals are perfectly normal. Have a great day!")
+        }
+      }
+    }
+    // Only fetch automatically if we actually loaded a real user or on mount if no auth initially.
+    // To prevent infinite re-fetching, we'll keep it on initial load, but allow manual refresh below.
+    fetchInsight()
+  }, [user?.id])
+
+  const refreshAction = async () => {
+    try {
+      setAiInsight("Analyzing your vitals...")
+      const ai = getGemini()
+      const prompt = `Given these vitals: Heart Rate ${Math.round(healthData.heartRate)} bpm, SpO2 ${Math.round(healthData.spo2)}%, Temp ${healthData.temp.toFixed(1)}°F. Provide a single, short, encouraging 2-sentence daily health advice. No robotic tone.`
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+      })
+      setAiInsight(response.text || "Your vitals look stable. Keep staying hydrated!")
+    } catch (e: any) {
+      if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
+        setAiInsight("Please try again after 15 minutes.")
+      } else {
         setAiInsight("Your vitals are perfectly normal. Have a great day!")
       }
     }
-    fetchInsight()
-  }, [])
+  }
   
   const handleLogout = async () => {
     if (supabase) {
@@ -175,9 +209,9 @@ export function Dashboard() {
           <CircularProgress 
             value={healthData.temp.toFixed(1)} 
             label="Temperature" 
-            unit="°C" 
+            unit="°F" 
             color="#F59E0B" 
-            max={40} 
+            max={110} 
             status="NORMAL" 
             statusColor="text-amber-500" 
           />
@@ -186,11 +220,19 @@ export function Dashboard() {
 
       <Card className="overflow-hidden border border-sky-100 shadow-xl shadow-sky-900/5">
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
-              <span className="text-xl">✨</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+                <span className="text-xl">✨</span>
+              </div>
+              <h3 className="font-bold text-slate-800">AI Recommendation</h3>
             </div>
-            <h3 className="font-bold text-slate-800">AI Recommendation</h3>
+            <button 
+              onClick={refreshAction}
+              className="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full hover:bg-sky-100 transition-colors"
+            >
+              Update AI
+            </button>
           </div>
           <p className="text-sm text-slate-600 leading-relaxed italic">
             "{aiInsight}"

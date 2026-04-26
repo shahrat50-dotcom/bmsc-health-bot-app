@@ -11,6 +11,7 @@ import { History } from './pages/History'
 import { Profile } from './pages/Profile'
 import { Admin } from './pages/Admin'
 import { EmergencyContacts } from './pages/EmergencyContacts'
+import { Chat } from './pages/Chat'
 import { MobileLayout } from './components/Layout/MobileLayout'
 import { AuthLayout } from './components/Layout/AuthLayout'
 
@@ -26,6 +27,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="scan" element={<Scan />} />
           <Route path="history" element={<History />} />
+          <Route path="chat" element={<Chat />} />
           <Route path="profile" element={<Profile />} />
           <Route path="emergency" element={<EmergencyContacts />} />
         </Route>

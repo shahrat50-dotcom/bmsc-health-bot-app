@@ -1,6 +1,9 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": [],
+  "name": "Smart Health App",
+  "description": "Provides health monitoring and AI chatbot",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
   "majorCapabilities": []
 }

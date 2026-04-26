@@ -7,7 +7,7 @@ export const getVitals = (userId: number) => {
   return {
     heartRate: 72,
     spo2: 98,
-    temp: 36.6
+    temp: 98.6
   };
 };
 
