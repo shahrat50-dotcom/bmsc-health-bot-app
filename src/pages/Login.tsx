@@ -81,7 +81,7 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+    <div className="flex flex-col justify-center px-4 py-8">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -104,7 +104,7 @@ export function Login() {
         transition={{ delay: 0.1 }}
         className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm"
       >
-        <Card className="p-8 backdrop-blur-xl bg-white/80 border-sky-100">
+        <Card className="p-6 md:p-8 backdrop-blur-xl bg-white/80 border-sky-100">
           {errorMsg && (
             <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-600 font-medium">
               {errorMsg}
@@ -240,11 +240,6 @@ export function Login() {
             </button>
           </div>
         </Card>
-
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm text-sky-600/60">
-          <ShieldCheck className="h-4 w-4" />
-          <span>Secured by Supabase Identity</span>
-        </div>
       </motion.div>
     </div>
   )
