@@ -15,29 +15,32 @@ import { EmergencyContacts } from './pages/EmergencyContacts'
 import { Chat } from './pages/Chat'
 import { MobileLayout } from './components/Layout/MobileLayout'
 import { AuthLayout } from './components/Layout/AuthLayout'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route element={<AuthLayout />}>
-          <Route path="/" element={<Login />} />
-        </Route>
-        
-        <Route path="/app" element={<MobileLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="scan" element={<Scan />} />
-          <Route path="history" element={<History />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="reminders" element={<Reminders />} />
-          <Route path="emergency" element={<EmergencyContacts />} />
-        </Route>
+    <LanguageProvider>
+      <Router>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/" element={<Login />} />
+          </Route>
+          
+          <Route path="/app" element={<MobileLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="scan" element={<Scan />} />
+            <Route path="history" element={<History />} />
+            <Route path="chat" element={<Chat />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="reminders" element={<Reminders />} />
+            <Route path="emergency" element={<EmergencyContacts />} />
+          </Route>
 
-        <Route path="/admin" element={<Admin />} />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          <Route path="/admin" element={<Admin />} />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </LanguageProvider>
   )
 }

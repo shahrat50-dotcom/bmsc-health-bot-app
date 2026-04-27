@@ -297,6 +297,30 @@ export function Admin() {
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Balance</p>
                             <p className="font-bold text-slate-900">৳{(user.balance || 0).toFixed(2)}</p>
                           </div>
+                          {!isAdminViewer && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to delete this user?")) {
+                                  const deleteUser = async () => {
+                                    if (!supabase) return;
+                                    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+                                    if (!error) {
+                                      setUsers(prev => prev.filter(u => u.id !== user.id));
+                                    } else {
+                                      alert("Failed to delete user: " + error.message);
+                                    }
+                                  };
+                                  deleteUser();
+                                }
+                              }}
+                              className="h-9 w-9 text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant={editingUserId === user.id ? "secondary" : "outline"} 
                             size="sm" 
