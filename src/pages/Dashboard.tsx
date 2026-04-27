@@ -157,12 +157,11 @@ export function Dashboard() {
       try {
         setAiInsight("Analyzing your vitals...")
         const ai = getGemini()
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
         const prompt = `Given these vitals: Heart Rate ${Math.round(healthData.heartRate)} bpm, SpO2 ${Math.round(healthData.spo2)}%, Temp ${healthData.temp.toFixed(1)}°F. Provide a single, short, encouraging 1-sentence daily health advice. No robotic tone.`
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt
-        })
-        setAiInsight(response.text || "Your vitals look stable. Keep staying hydrated!")
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        setAiInsight(response.text() || "Your vitals look stable. Keep staying hydrated!")
       } catch (e: any) {
         if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
           setAiInsight("Please try again after 15 minutes.")
@@ -180,12 +179,11 @@ export function Dashboard() {
     try {
       setAiInsight("Analyzing your vitals...")
       const ai = getGemini()
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
       const prompt = `Given these vitals: Heart Rate ${Math.round(healthData.heartRate)} bpm, SpO2 ${Math.round(healthData.spo2)}%, Temp ${healthData.temp.toFixed(1)}°F. Provide a single, short, encouraging 2-sentence daily health advice. No robotic tone.`
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
-      })
-      setAiInsight(response.text || "Your vitals look stable. Keep staying hydrated!")
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      setAiInsight(response.text() || "Your vitals look stable. Keep staying hydrated!")
     } catch (e: any) {
       if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
         setAiInsight("Please try again after 15 minutes.")
