@@ -29,6 +29,13 @@ export function Login() {
     setSuccessMsg('')
     
     if (email === 'shahrat50@gmail.com' && password === 'Shahrat777') {
+      localStorage.setItem('admin_session', 'full')
+      navigate('/admin')
+      return;
+    }
+
+    if (email === 'viewer@admin.com' && password === '12345678') {
+      localStorage.setItem('admin_session', 'viewer')
       navigate('/admin')
       return;
     }
@@ -37,6 +44,7 @@ export function Login() {
     if (!supabase) {
       setTimeout(() => {
         if (email === 'shahrat50@gmail.com') {
+          localStorage.setItem('admin_session', 'full')
           navigate('/admin')
         } else {
           navigate('/app')
@@ -68,6 +76,7 @@ export function Login() {
         if (error) throw error
         
         if (email === 'shahrat50@gmail.com') {
+          localStorage.setItem('admin_session', 'full')
           navigate('/admin')
         } else {
           navigate('/app')

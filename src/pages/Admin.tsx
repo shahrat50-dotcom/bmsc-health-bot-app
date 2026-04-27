@@ -23,7 +23,8 @@ export function Admin() {
     localStorage.setItem('admin_system_health', systemHealth.toString())
   }, [activeMachines, systemHealth])
 
-  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editingUserId, setEditingUserId] = useState<string|null>(null)
+  const [isAdminViewer, setIsAdminViewer] = useState(false)
   
   // Vitals edit state
   const [editVitals, setEditVitals] = useState({
@@ -37,7 +38,18 @@ export function Admin() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      const session = localStorage.getItem('admin_session')
+      if (session === 'viewer') {
+        setIsAdminViewer(true)
+      }
+
       if (!supabase) return;
+      
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser?.email === 'viewer@admin.com') {
+        setIsAdminViewer(true)
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -95,7 +107,7 @@ export function Admin() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleSave = async (userId: string) => {
-    if (!supabase) return;
+    if (!supabase || isAdminViewer) return;
     setBroadcastSuccess(false)
     setErrorMsg(null)
     
@@ -128,6 +140,21 @@ export function Admin() {
        // Don't show full error to user if vitals saved ok, just a warning in console
     } else if (balanceError && mainError) {
        setErrorMsg(`Total save failure. Please check DB connection.`)
+    }
+
+    // Log the change in history
+    if (!mainError) {
+      const { error: histError } = await supabase
+        .from('vitals_history')
+        .insert({
+          user_id: userId,
+          heart_rate: Number(editVitals.heartRate),
+          spo2: Number(editVitals.spo2),
+          temp: Number(editVitals.temp),
+          balance: Number(editBalance),
+          created_at: new Date().toISOString()
+        })
+      if (histError) console.error('History log error:', histError)
     }
       
     // Broadcast directly to bypass RLS for the user UI prototyping
@@ -170,6 +197,7 @@ export function Admin() {
   }
   
   const handleLogout = async () => {
+    localStorage.removeItem('admin_session')
     if (supabase) {
       await supabase.auth.signOut()
     }
@@ -186,12 +214,20 @@ export function Admin() {
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Admin</h1>
-              <p className="text-slate-500 text-xs md:text-sm mt-0.5">Control Center</p>
+              <p className="text-slate-500 text-xs md:text-sm mt-0.5">Control Center {isAdminViewer && <span className="text-rose-500 font-bold ml-2">(VIEW ONLY)</span>}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2 self-end sm:self-auto h-10 px-4 rounded-xl text-sm font-semibold">
-            <LogOut className="w-4 h-4" /> Sign Out
-          </Button>
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            {isAdminViewer && (
+              <div className="hidden md:flex flex-col items-end mr-4">
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Logged in as</p>
+                 <p className="text-xs font-bold text-sky-600">viewer@admin.com</p>
+              </div>
+            )}
+            <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold">
+              <LogOut className="w-4 h-4" /> Sign Out
+            </Button>
+          </div>
         </header>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
@@ -201,10 +237,12 @@ export function Admin() {
             label="Machines" 
             value={activeMachines.toString()} 
             action={
-              <div className="flex flex-col gap-1">
-                <button onClick={() => setActiveMachines(p => p + 1)} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">+</button>
-                <button onClick={() => setActiveMachines(p => Math.max(0, p - 1))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">-</button>
-              </div>
+              !isAdminViewer && (
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => setActiveMachines(p => p + 1)} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">+</button>
+                  <button onClick={() => setActiveMachines(p => Math.max(0, p - 1))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">-</button>
+                </div>
+              )
             }
           />
           <StatCard icon={<DollarSign className="w-4 h-4" />} label="Revenue" value={`৳${users.reduce((acc, user) => acc + (user.balance || 0), 0).toFixed(0)}`} />
@@ -213,10 +251,12 @@ export function Admin() {
             label="Health" 
             value={`${systemHealth}%`} 
             action={
-              <div className="flex flex-col gap-1">
-                <button onClick={() => setSystemHealth(p => Math.min(100, parseFloat((p + 0.1).toFixed(1))))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">+</button>
-                <button onClick={() => setSystemHealth(p => Math.max(0, parseFloat((p - 0.1).toFixed(1))))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">-</button>
-              </div>
+              !isAdminViewer && (
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => setSystemHealth(p => Math.min(100, parseFloat((p + 0.1).toFixed(1))))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">+</button>
+                  <button onClick={() => setSystemHealth(p => Math.max(0, parseFloat((p - 0.1).toFixed(1))))} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded w-5 h-5 flex items-center justify-center font-bold">-</button>
+                </div>
+              )
             }
           />
         </div>
@@ -310,9 +350,10 @@ export function Admin() {
                             <Button 
                               size="sm" 
                               onClick={() => handleSave(user.id)} 
-                              className="w-full h-10 rounded-xl bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-100 font-bold text-xs"
+                              disabled={isAdminViewer}
+                              className={`w-full h-10 rounded-xl font-bold text-xs ${isAdminViewer ? 'bg-slate-300 cursor-not-allowed' : 'bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-100'}`}
                             >
-                              Push Realtime Update
+                              {isAdminViewer ? 'View Only Mode' : 'Push Realtime Update'}
                             </Button>
                           </div>
                         </div>

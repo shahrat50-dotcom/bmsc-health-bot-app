@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Heart, Droplets, Thermometer, Sparkles, PhoneCall, LogOut } from 'lucide-react'
-import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
+import { format } from 'date-fns'
 import { Card } from '@/src/components/ui/Card'
 import { getGemini } from '@/src/lib/gemini'
 import { supabase } from '@/src/lib/supabase'
@@ -24,7 +25,7 @@ export function Dashboard() {
     temp: 98.6,
     balance: 0,
   })
-  const [chartData, setChartData] = useState(generateInitialChartData())
+  const [chartData, setChartData] = useState<any[]>([])
   const [aiInsight, setAiInsight] = useState("Analyzing your vitals...")
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export function Dashboard() {
       if (user) {
         setUser(user)
         fetchProfile(user.id)
+        fetchHistory(user.id)
       } else {
         navigate('/')
       }
@@ -54,6 +56,32 @@ export function Dashboard() {
           temp: data.temp || 98.6,
           balance: data.balance || 0
         })
+      }
+    }
+
+    const fetchHistory = async (userId: string) => {
+      if (!supabase) return;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('vitals_history')
+        .select('created_at, heart_rate, spo2')
+        .eq('user_id', userId)
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: true })
+        .limit(100)
+
+      if (data && data.length > 0) {
+        const mappedData = data.map(item => ({
+          time: format(new Date(item.created_at), 'HH:mm'),
+          hr: item.heart_rate,
+          spo2: item.spo2
+        }))
+        setChartData(mappedData)
+      } else {
+        // Fallback to some dummy data if no history yet
+        setChartData(generateInitialChartData())
       }
     }
 
@@ -275,26 +303,47 @@ export function Dashboard() {
 
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 px-1 text-lg">Heart Rate Trend</h3>
-        <Card className="h-64 p-4 flex flex-col pt-6 bg-white">
+        <Card className="h-64 p-4 flex flex-col pt-6 bg-white overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorHr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3}/>
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorSpo2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1}/>
                   <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <Tooltip 
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                itemStyle={{ color: '#0c4a6e', fontWeight: 600 }}
+                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', padding: '8px' }}
+                itemStyle={{ fontWeight: 600, padding: '2px 0' }}
+              />
+              <XAxis 
+                dataKey="time" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                interval="preserveStartEnd"
               />
               <Area 
                 type="monotone" 
                 dataKey="hr" 
-                stroke="#0ea5e9" 
+                name="Heart Rate"
+                stroke="#f43f5e" 
                 strokeWidth={3}
                 fillOpacity={1} 
                 fill="url(#colorHr)" 
+              />
+              <Area 
+                type="monotone" 
+                dataKey="spo2" 
+                name="Oxygen"
+                stroke="#0ea5e9" 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorSpo2)" 
               />
             </AreaChart>
           </ResponsiveContainer>
