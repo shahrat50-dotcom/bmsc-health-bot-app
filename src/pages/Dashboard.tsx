@@ -12,7 +12,7 @@ import { useLanguage } from '@/src/contexts/LanguageContext'
 
 const generateInitialChartData = () => {
   return Array.from({ length: 12 }).map((_, i) => ({
-    time: `${i * 2}:00`,
+    time: format(new Date().setHours(i * 2, 0, 0, 0), 'h:mm a'),
     hr: 60 + Math.random() * 40,
     spo2: 95 + Math.random() * 5,
   }))
@@ -99,12 +99,13 @@ export function Dashboard() {
         .select('created_at, heart_rate, spo2')
         .eq('user_id', userId)
         .gte('created_at', today.toISOString())
-        .order('created_at', { ascending: true })
-        .limit(100)
+        .order('created_at', { ascending: false })
+        .limit(20)
 
       if (data && data.length > 0) {
-        const mappedData = data.map(item => ({
-          time: format(new Date(item.created_at), 'HH:mm'),
+        const sortedData = [...data].reverse()
+        const mappedData = sortedData.map(item => ({
+          time: format(new Date(item.created_at), 'h:mm a'),
           hr: item.heart_rate,
           spo2: item.spo2
         }))
@@ -173,14 +174,21 @@ export function Dashboard() {
   }, [navigate, user?.id])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setChartData(prev => {
-        const d = new Date()
-        const timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`
-        return [...prev.slice(1), { time: timeStr, hr: healthData.heartRate, spo2: healthData.spo2 }]
-      })
-    }, 5000)
-    return () => clearInterval(interval)
+    setChartData(prev => {
+      if (prev.length === 0) return prev;
+      const lastPoint = prev[prev.length - 1];
+      
+      if (lastPoint && lastPoint.hr === healthData.heartRate && lastPoint.spo2 === healthData.spo2) {
+        return prev;
+      }
+
+      const d = new Date();
+      const timeStr = format(d, 'h:mm:ss a');
+      
+      const newPoint = { time: timeStr, hr: healthData.heartRate, spo2: healthData.spo2 };
+      const nextData = [...prev, newPoint];
+      return nextData.length > 20 ? nextData.slice(nextData.length - 20) : nextData;
+    });
   }, [healthData.heartRate, healthData.spo2])
 
   useEffect(() => {
@@ -289,7 +297,7 @@ ${langPrompt} Provide a response in JSON format exactly matching this schema:
     <div className="flex flex-col p-6 space-y-6">
       <header className="flex items-center justify-between pt-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0369A1]">HealthSync <span className="font-light text-[#38BDF8]">Smart</span></h1>
+          <h1 className="text-2xl font-bold text-[#0369A1]">Smart Health <span className="font-light text-[#38BDF8]">Assist</span></h1>
           <p className="text-slate-500 text-sm font-medium">Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}</p>
         </div>
         <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Bell, Plus, Trash2, Clock, Pill, CheckCircle2 } from 'lucide-react'
 import { Card } from '@/src/components/ui/Card'
 import { Button } from '@/src/components/ui/Button'
+import { format, parse } from 'date-fns'
 import { supabase } from '@/src/lib/supabase'
 
 interface Reminder {
@@ -179,7 +180,7 @@ export function Reminders() {
                       <h3 className="font-bold text-slate-800">{reminder.medicine_name}</h3>
                       <div className="flex items-center gap-1.5 text-sky-600 font-medium">
                         <Clock className="w-3.5 h-3.5" />
-                        <span className="text-sm">{reminder.time}</span>
+                        <span className="text-sm">{reminder.time ? format(parse(reminder.time, 'HH:mm:ss', new Date()).toString().includes('Invalid') ? parse(reminder.time, 'HH:mm', new Date()) : parse(reminder.time, 'HH:mm:ss', new Date()), 'h:mm a') : ''}</span>
                       </div>
                     </div>
                   </div>
