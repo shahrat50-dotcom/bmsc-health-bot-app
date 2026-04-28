@@ -220,7 +220,7 @@ export function Dashboard() {
       setAiInsight(data)
     } catch (e: any) {
       if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
-        setAiError("Please try again after 15 minutes. Note: Add VITE_GEMINI_API_KEY in Vercel to use AI.")
+        setAiError("Too many requests. Please try again later.")
       } else {
         setAiError("Could not analyze vitals. " + (e?.message || ''))
       }
@@ -273,7 +273,7 @@ ${langPrompt} Provide a response in JSON format exactly matching this schema:
         setBmiAiInsight(data);
     } catch (e: any) {
         if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
-          setBmiAiError("Please try again after 15 minutes. Note: Add VITE_GEMINI_API_KEY in Vercel to use AI.")
+          setBmiAiError("Too many requests. Please try again later.")
         } else {
           setBmiAiError("Could not analyze BMI data. " + (e?.message || ''))
         }
