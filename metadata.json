@@ -1,5 +1,5 @@
 {
-  "name": "Smart Health App",
+  "name": "Smart Health Assidt",
   "description": "Provides health monitoring and AI chatbot",
   "requestFramePermissions": [
     "microphone",
