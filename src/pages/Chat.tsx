@@ -40,6 +40,12 @@ export function Chat() {
   }
 
   const toggleRecording = () => {
+    // Unlock TTS on user gesture
+    if (window.speechSynthesis) {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        window.speechSynthesis.cancel();
+    }
+
     if (isRecording) {
       if (recognitionRef.current) {
         recognitionRef.current.stop()
@@ -93,6 +99,11 @@ export function Chat() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Unlock TTS on user gesture
+    if (window.speechSynthesis) {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        window.speechSynthesis.cancel();
+    }
     handleSendEvent(input)
   }
 
