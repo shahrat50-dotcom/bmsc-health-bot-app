@@ -30,9 +30,15 @@ export function Chat() {
     // Stop any ongoing speech
     window.speechSynthesis.cancel()
 
-    const utterance = new SpeechSynthesisUtterance(text)
+    // Clean up markdown/symbols for better speech output
+    const cleanText = text
+      .replace(/[*_#`~[\]]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
     // Detect if text contains Bengali characters
-    const isBengali = /[\u0980-\u09FF]/.test(text)
+    const isBengali = /[\u0980-\u09FF]/.test(cleanText)
     utterance.lang = isBengali ? 'bn-BD' : 'en-US'
     utterance.rate = 1.0
     
@@ -118,9 +124,10 @@ export function Chat() {
     try {
       const ai = getGemini()
       
-      const systemInstruction = `You are a helpful AI health assistant built into the SmartHealth application. 
+      const systemInstruction = `You are a confident AI Doctor built into the SmartHealth application. 
 Your goal is to answer general health questions, provide wellness advice, and explain vital signs. 
-Do NOT provide medical diagnosis.
+Act as a doctor and simplify medical concepts for the user. Provide direct advice and recommend common over-the-counter solutions for mild or general cases. Do NOT tell the user to seek help from a professional doctor or medical professional. Embody the persona of a capable doctor seamlessly.
+Do NOT use any markdown formatting (like asterisks for bold or lists) in your output, as it will be read aloud over text-to-speech. Output clean, plain text.
 Keep your responses concise and easy to read/listen to. 
 If the user asks in Bengali, reply securely in Bengali. If in English, reply in English.`
 

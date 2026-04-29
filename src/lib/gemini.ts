@@ -8,7 +8,7 @@ export function getGemini(): GoogleGenAI {
     const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!key) {
-      throw new Error('API key is missing. For local development or Android Studio, add VITE_GEMINI_API_KEY in your .env file.');
+      throw new Error('API key is missing. For Vercel, add VITE_GEMINI_API_KEY in Project Settings > Environment Variables. For local development, add it to your .env file.');
     }
     geminiClient = new GoogleGenAI({ apiKey: key });
   }
